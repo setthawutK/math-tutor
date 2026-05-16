@@ -55,3 +55,14 @@ urllib3==2.6.3
 uuid_utils==0.14.1
 uvicorn==0.39.0
 zstandard==0.25.0
+fastapi
+uvicorn
+sqlmodel
+psycopg2-binary
+langchain
+langchain-openai
+langchain-google-genai
+python-dotenv
+requests
+tenacity
+slowapi
