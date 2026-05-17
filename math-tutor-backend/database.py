@@ -1,7 +1,10 @@
 import os
 from sqlmodel import SQLModel, create_engine, Session
+from dotenv import load_dotenv
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+load_dotenv()  # เพิ่มตรงนี้
+
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./mathtutor.db")
 engine = create_engine(DATABASE_URL)
 
 def create_db():

@@ -1,30 +1,35 @@
 import os
 from langchain_openai import ChatOpenAI
 from tenacity import retry, wait_exponential, stop_after_attempt
+from pydantic import SecretStr
+from dotenv import load_dotenv
+
+load_dotenv()
 
 llm_translate = ChatOpenAI(
     base_url="https://api.groq.com/openai/v1",
-    api_key=os.getenv("GROQ_KEY"),
+    api_key=SecretStr(os.getenv("GROQ_KEY", "")),
     model="llama-3.1-8b-instant",
     temperature=0
 )
 
+
 models = {
     "llama": ChatOpenAI(
         base_url="https://api.groq.com/openai/v1",
-        api_key=os.getenv("GROQ_API_KEY"),
+        api_key=SecretStr(os.getenv("GROQ_KEY", "")),
         model="llama-3.1-8b-instant",
         temperature=0.3
     ),
     "deepseek": ChatOpenAI(
         base_url="https://api.deepseek.com",
-        api_key=os.getenv("DEEPSEEK_KEY"),
+        api_key=SecretStr(os.getenv("DEEPSEEK_KEY", "")),
         model="deepseek-chat",
         temperature=0.3
     ),
     "qwen": ChatOpenAI(
         base_url="https://api.groq.com/openai/v1",
-        api_key=os.getenv("QWEN_KEY"),
+        api_key=SecretStr(os.getenv("QWEN_KEY", "")),
         model="qwen-qwq-32b",
         temperature=0.3
     )
@@ -55,12 +60,13 @@ Output: integral of x^2 + 1
 
 Input: {thai_query}
 Output:""")
-    return response.content.strip()
+    return str(response.content).strip()
+
 
 @retry(wait=wait_exponential(min=1, max=10), stop=stop_after_attempt(3))
 def _call_llm(model_name: str, prompt: str) -> str:
     response = models[model_name].invoke(prompt)
-    return response.content
+    return str(response.content)
 
 def explain(thai_query: str, wolfram_result: str, model_name: str, history: str = "") -> str:
     history_section = f"บทสนทนาก่อนหน้า:\n{history}\n" if history else ""
