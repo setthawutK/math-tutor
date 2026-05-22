@@ -18,11 +18,15 @@ math-tutor/
 │   ├── main.py                  # API endpoints (ask/stream, vote, results)
 │   ├── database.py              # Firestore client
 │   ├── models.py                # Pydantic models
+│   │   
 │   ├── services/
 │   │   ├── llm.py               # LLM integration + Prompt Templates
 │   │   └── wolfram.py           # Wolfram Alpha API
 │   ├── Dockerfile
-│   └── requirements.txt
+│   └── requirements.tx  
+│   ├── eval.py                  # Evaluation script (Answer Accuracy)
+│   ├── dataset-math-tutor.csv   # ชุดโจทย์ 30 ข้อ พร้อมเฉลย
+│   └── results_evaluated.csv    # ผลลัพธ์การประเมินรายข้อ
 │
 ├── math-tutor-webapp/           # Angular Frontend
 │   ├── src/app/
@@ -31,10 +35,6 @@ math-tutor/
 │   │       └── chat-page.html   # UI (MathLive input, carousel, vote button)
 │   └── package.json
 │
-├── evaluate/                    # ชุดประเมินผล (แยกออกจาก backend)
-│   ├── eval.py                  # Evaluation script (Answer Accuracy)
-│   ├── dataset-math-tutor.csv   # ชุดโจทย์ 30 ข้อ พร้อมเฉลย
-│   └── results_evaluated.csv    # ผลลัพธ์การประเมินรายข้อ
 │
 └── README.md
 ```
