@@ -36,6 +36,8 @@
             class="w-full text-[15px] bg-transparent outline-none border-none text-neutral-800 min-h-[52px] max-h-[200px] overflow-y-auto block"
             [value]="question()"
             (input)="question.set($any($event.target).value)"
+            virtual-keyboard-mode="off"
+            math-mode-space="\:"
           >
           </math-field>
         </div>
@@ -130,14 +132,19 @@
                 class="prose prose-sm prose-neutral max-w-none text-neutral-600"
                 [data]="currentResponse()"
                 [katex]="true"
+                [katexOptions]="{ throwOnError: false }"
+                [katexOptions]="katexOpts"
               ></markdown>
             </div>
 
-            <!-- Vote bar -->
-            <div class="px-5 py-3.5 border-t border-neutral-100 flex justify-end">
+            <div
+              class="px-5 py-3.5 border-t border-neutral-100 flex justify-end items-center gap-3"
+            >
+              <span *ngIf="hasVoted()" class="text-xs text-green-500">โหวตแล้ว ✓</span>
               <button
                 (click)="vote(slideLabel())"
-                class="px-4 py-1.5 text-xs border border-neutral-200 rounded-lg text-neutral-400 hover:text-[#DE122F] hover:border-[#DE122F] transition-all duration-150"
+                [disabled]="hasVoted()"
+                class="px-4 py-1.5 text-xs border border-neutral-200 rounded-lg text-neutral-400 hover:text-[#DE122F] hover:border-[#DE122F] disabled:opacity-30 disabled:pointer-events-none transition-all duration-150"
               >
                 โหวตติวเตอร์นี้ ›
               </button>

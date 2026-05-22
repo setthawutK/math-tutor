@@ -1,5 +1,12 @@
 __pycache__
 *.pyc
 .env
-venv/
+.venv/
 evaluate/
+results_evaluated.csv
+eval.py
+chart.py
+dataset-math-tutor.csv
+ex_results_evaluated.csv
+test.py
+accuracy_chart.png
