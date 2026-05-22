@@ -1,0 +1,19 @@
+:host ::ng-deep {
+  markdown {
+    blockquote {
+      border-left: none !important;
+      padding-left: 1.5rem !important;
+      margin: 0 !important;
+      color: inherit !important;
+      font-style: normal !important;
+
+      blockquote {
+        padding-left: 1rem !important;
+      }
+
+      p {
+        margin: 0.25rem 0 !important;
+      }
+    }
+  }
+}

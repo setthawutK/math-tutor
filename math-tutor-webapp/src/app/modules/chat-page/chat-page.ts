@@ -7,6 +7,8 @@ import 'mathlive'; // โหลด MathLive
 // 1. นำ Mock Data มาวางไว้นอก Class (หรือประกาศเป็น class property แทน)
 const MOCK_DATA = `การหาค่าลิมิตของฟังก์ชันนี้ สามารถใช้วิธี **L'Hôpital's Rule** (กฎของโลปีตาล) เนื่องจากเมื่อแทนค่า $x = 0$ จะได้รูปแบบไม่กำหนด $\\frac{0}{0}$
 
+
+
 **ขั้นตอนที่ 1:** หาอนุพันธ์ของเศษและส่วน \\
 จาก $$\\lim_{x \\to 0} \\frac{\\sin(x)}{x}$$
 
@@ -31,28 +33,54 @@ $$ \\lim_{x \\to 0} \\frac{\\cos(x)}{1} = \\frac{\\cos(0)}{1} = 1 $$
   styleUrl: './chat-page.scss',
 })
 export class ChatPage {
-  question = signal('\\lim_{x \\to 0} \\frac{\\sin(x)}{x}'); // ใส่โจทย์จำลองไว้ในช่องพิมพ์
-  wolframRaw = signal('limit of sin(x)/x as x->0'); // ใส่ค่าจำลองให้ Wolfram
+  private _sseBuffer = '';
+
+  question = signal(''); // ใส่โจทย์จำลองไว้ในช่องพิมพ์ \\lim_{x \\to 0} \\frac{\\sin(x)}{x}
+  wolframRaw = signal(''); // ใส่ค่าจำลองให้ Wolfram limit of sin(x)/x as x->0
 
   // 2. ใส่ MOCK_DATA เป็นค่าเริ่มต้นให้ทั้ง 3 กล่อง
   responses = signal({
-    llama: MOCK_DATA,
-    deepseek: MOCK_DATA,
-    qwen: MOCK_DATA,
+    llama: '',
+    gemini: '',
+    qwen: '',
   });
 
   isStreaming = signal(false);
   // 3. ปรับเป็น true เพื่อให้ UI โชว์ผลลัพธ์ทันทีที่เปิดหน้าเว็บ
-  hasResult = signal(true);
+  hasResult = signal(false);
   currentResponseId = signal<number | null>(null);
+
+  currentSlide = signal(0);
+
+  readonly slideKeys = ['llama', 'gemini', 'qwen'] as const;
+  readonly slideLabels = ['Llama', 'Gemini', 'Qwen'];
+
+  slideLabel() {
+    return this.slideLabels[this.currentSlide()];
+  }
+
+  currentResponse() {
+    const key = this.slideKeys[this.currentSlide()];
+    return this.responses()[key];
+  }
+
+  nextSlide() {
+    if (this.currentSlide() < 2) this.currentSlide.update((v) => v + 1);
+  }
+
+  prevSlide() {
+    if (this.currentSlide() > 0) this.currentSlide.update((v) => v - 1);
+  }
 
   async askQuestion() {
     if (!this.question()) return;
+    this.currentSlide.set(0);
 
     this.isStreaming.set(true);
     this.hasResult.set(true);
     this.wolframRaw.set('');
-    this.responses.set({ llama: '', deepseek: '', qwen: '' });
+    this.responses.set({ llama: '', gemini: '', qwen: '' });
+    this._sseBuffer = '';
 
     try {
       const response = await fetch('http://127.0.0.1:8000/ask/stream', {
@@ -102,7 +130,32 @@ export class ChatPage {
     }
   }
 
+  private _flushSSEBuffer() {
+    // SSE events คั่นด้วย \n\n
+    const parts = this._sseBuffer.split('\n\n');
+    // ส่วนสุดท้ายอาจยังไม่สมบูรณ์ → เก็บไว้รอ
+    this._sseBuffer = parts.pop() ?? '';
+
+    for (const part of parts) {
+      for (const line of part.split('\n')) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === 'wolfram') {
+              this.wolframRaw.set(data.content);
+            } else if (data.type === 'chunk') {
+              this.responses.update((cur) => ({
+                ...cur,
+                [data.model]: cur[data.model as keyof typeof cur] + data.content,
+              }));
+            }
+          } catch {}
+        }
+      }
+    }
+  }
+
   async vote(modelName: string) {
-    alert(`โหวตให้โมเดล: ${modelName} เรียบร้อยแล้ว!`);
+    alert(`โหวตเรียบร้อยแล้ว!`);
   }
 }

@@ -1,134 +1,150 @@
 <div
-  class="min-h-screen bg-[#0E0E0E] text-neutral-200 font-sans antialiased selection:bg-red-500/30"
+  class="min-h-screen bg-[#F7F5F2] text-neutral-800 font-['DM_Sans'] antialiased selection:bg-red-100"
 >
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-12">
-    <div class="text-center space-y-5 max-w-3xl mx-auto">
-      <div class="relative w-full max-w-sm mx-auto mb-8">
-        <div
-          class="absolute inset-0 bg-gradient-to-r from-red-600 via-rose-500 to-orange-500 blur-lg opacity-40"
-        ></div>
-        <div
-          class="relative h-1 bg-gradient-to-r from-red-600 via-rose-500 to-orange-500 rounded-full"
-        ></div>
+    <div class="text-center space-y-4 max-w-3xl mx-auto">
+      <div class="flex justify-center mb-2">
+        <div class="w-8 h-0.5 bg-[#DE122F] rounded-full"></div>
       </div>
+      <p class="text-xs text-neutral-400 tracking-[0.1em] uppercase">P'Gen × Nong'Tam</p>
       <div class="flex flex-col items-center gap-2 justify-center">
-        <h1 class="text-2xl sm:text-3xl font-medium tracking-wider text-neutral-400">
-          P'Gen Nong'Tam
-        </h1>
-        <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-white drop-shadow-md">
-          Math Tutor AI
+        <h1
+          class="font-['DM_Serif_Display'] text-5xl sm:text-6xl font-normal text-neutral-900 leading-tight"
+        >
+          Math Tutor <span class="text-[#DE122F]">AI</span>
         </h1>
       </div>
-      <p class="text-lg text-neutral-400">
+      <p class="text-base text-neutral-400 leading-relaxed max-w-md mx-auto">
         Discover step-by-step calculus solutions powered by top AI models.
         <br class="hidden sm:block" />
         Empowering students with quality-driven insights.
       </p>
     </div>
 
-    <div class="max-w-2xl mx-auto relative group">
-      <div
-        class="absolute -inset-0.5 bg-gradient-to-r from-neutral-800 to-neutral-700 rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-500"
-      ></div>
-      <div
-        class="relative flex flex-col sm:flex-row gap-3 bg-[#161616] p-2 rounded-xl border border-neutral-800"
-      >
+    <div class="max-w-2xl mx-auto">
+      <div class="bg-white border border-neutral-200 rounded-2xl p-3 shadow-sm">
+        <div class="px-1 mb-2">
+          <span class="text-[11px] text-neutral-300 tracking-wide"
+            >โจทย์คณิตศาสตร์ (รองรับ LaTeX)</span
+          >
+        </div>
+
         <div
-          class="flex-1 rounded-lg bg-[#0E0E0E] border border-neutral-800 focus-within:border-neutral-600 transition-colors flex items-center px-2"
+          class="bg-[#F7F5F2] border border-neutral-200 rounded-xl px-3 py-2 mb-3 focus-within:border-[#DE122F] transition-colors duration-200"
         >
           <math-field
-            class="w-full text-lg p-2 bg-transparent outline-none border-none min-h-[45px] text-white"
+            class="w-full text-[15px] bg-transparent outline-none border-none text-neutral-800 min-h-[52px] max-h-[200px] overflow-y-auto block"
             [value]="question()"
             (input)="question.set($any($event.target).value)"
           >
           </math-field>
         </div>
 
-        <button
-          (click)="askQuestion()"
-          [disabled]="isStreaming() || !question()"
-          class="sm:px-8 py-3 bg-[#DE122F] hover:bg-[#B80F25] text-white font-medium rounded-lg shadow-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200 flex items-center justify-center gap-2 min-w-[130px]"
-        >
-          <span
-            *ngIf="isStreaming()"
-            class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
-          ></span>
-          <span>{{ isStreaming() ? 'Processing' : 'Explore >' }}</span>
-        </button>
+        <div class="flex items-center justify-between px-1">
+          <span class="text-xs text-neutral-300 hidden sm:block">
+            เช่น <code class="text-neutral-400 font-mono">\int x^2\,dx</code>
+          </span>
+          <button
+            (click)="askQuestion()"
+            [disabled]="isStreaming() || !question()"
+            class="px-8 py-2.5 bg-[#DE122F] hover:bg-[#B80F25] active:scale-95 text-white text-sm font-medium rounded-xl disabled:opacity-40 disabled:pointer-events-none transition-all duration-200 flex items-center gap-2 min-w-[130px] justify-center"
+          >
+            <span
+              *ngIf="isStreaming()"
+              class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+            ></span>
+            <span>{{ isStreaming() ? 'Processing...' : 'Explore ›' }}</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <div *ngIf="hasResult()" class="pt-8">
+    <div class="pt-8">
       <div class="mb-8 text-center">
         <span
-          class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#161616] border border-neutral-800 text-sm text-neutral-400 font-mono"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-neutral-200 text-xs text-neutral-400 font-mono shadow-sm"
         >
-          <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-          Wolfram: {{ wolframRaw() || 'Calculating...' }}
+          <span
+            class="w-2 h-2 rounded-full"
+            [class]="!isStreaming() ? 'bg-green-400' : 'bg-red-400 animate-pulse'"
+          ></span>
+          <span *ngIf="isStreaming()">Status: Calculating...</span>
+          <span *ngIf="!isStreaming()">Status: Ready</span>
         </span>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div
-          class="bg-[#111111] border border-neutral-800 border-t-2 border-t-[#DE122F] flex flex-col h-full min-h-[400px]"
-        >
-          <div class="p-5 border-b border-neutral-800/50 flex justify-between items-center">
-            <h3 class="font-semibold text-white text-sm">ติวเตอร์คนที่ 1</h3>
-            <button
-              class="text-xs text-neutral-400 hover:text-white transition-colors flex items-center gap-1"
-            >
-              Vote <span>></span>
-            </button>
-          </div>
-          <div class="p-5 flex-1 overflow-y-auto">
-            <markdown
-              class="prose prose-invert prose-sm prose-neutral max-w-none text-neutral-300"
-              [data]="responses().llama"
-              [katex]="true"
-            ></markdown>
-          </div>
-        </div>
+      <!-- Carousel -->
+      @if (hasResult()) {
+        <div class="max-w-3xl mx-auto">
+          <div
+            class="bg-white border border-neutral-200 border-t-2 border-t-[#DE122F] rounded-2xl shadow-sm min-h-[500px] flex flex-col overflow-hidden"
+          >
+            <div class="px-5 py-4 border-b border-neutral-100 flex justify-between items-center">
+              <h3 class="text-sm font-medium text-neutral-700">
+                ติวเตอร์คนที่ {{ currentSlide() + 1 }}
+              </h3>
+              <div class="flex items-center gap-3">
+                <div class="flex gap-1.5">
+                  <span
+                    *ngFor="let _ of [0, 1, 2]; let i = index"
+                    class="w-2 h-2 rounded-full transition-colors duration-200"
+                    [class]="i === currentSlide() ? 'bg-[#DE122F]' : 'bg-neutral-200'"
+                  >
+                  </span>
+                </div>
+                <button
+                  (click)="prevSlide()"
+                  [disabled]="currentSlide() === 0"
+                  class="px-3 py-1 text-xs border border-neutral-200 rounded-lg text-neutral-400 hover:text-neutral-700 hover:border-neutral-400 disabled:opacity-30 transition-all duration-150"
+                >
+                  ‹ ก่อนหน้า
+                </button>
+                <button
+                  (click)="nextSlide()"
+                  [disabled]="currentSlide() === 2"
+                  class="px-3 py-1 text-xs border border-neutral-200 rounded-lg text-neutral-400 hover:text-neutral-700 hover:border-neutral-400 disabled:opacity-30 transition-all duration-150"
+                >
+                  ถัดไป ›
+                </button>
+              </div>
+            </div>
 
-        <div
-          class="bg-[#111111] border border-neutral-800 border-t-2 border-t-neutral-600 flex flex-col h-full min-h-[400px]"
-        >
-          <div class="p-5 border-b border-neutral-800/50 flex justify-between items-center">
-            <h3 class="font-semibold text-white text-sm">ติวเตอร์คนที่ 2</h3>
-            <button
-              class="text-xs text-neutral-400 hover:text-white transition-colors flex items-center gap-1"
-            >
-              Vote <span>></span>
-            </button>
-          </div>
-          <div class="p-5 flex-1 overflow-y-auto">
-            <markdown
-              class="prose prose-invert prose-sm prose-neutral max-w-none text-neutral-300"
-              [data]="responses().deepseek"
-              [katex]="true"
-            ></markdown>
-          </div>
-        </div>
+            <!-- Content -->
+            <div class="p-6 flex-1 overflow-y-auto">
+              <!-- Skeleton -->
+              <div *ngIf="isStreaming() && !currentResponse()" class="space-y-3 animate-pulse">
+                <div class="h-3 bg-neutral-100 rounded-full w-3/4"></div>
+                <div class="h-3 bg-neutral-100 rounded-full w-full"></div>
+                <div class="h-3 bg-neutral-100 rounded-full w-5/6"></div>
+                <div class="h-3 bg-neutral-100 rounded-full w-2/3"></div>
+                <div class="mt-5 h-3 bg-neutral-100 rounded-full w-full"></div>
+                <div class="h-3 bg-neutral-100 rounded-full w-4/5"></div>
+                <div class="h-8 bg-neutral-50 rounded-lg w-1/2 mt-2"></div>
+                <div class="mt-5 h-3 bg-neutral-100 rounded-full w-full"></div>
+                <div class="h-3 bg-neutral-100 rounded-full w-3/4"></div>
+              </div>
 
-        <div
-          class="bg-[#111111] border border-neutral-800 border-t-2 border-t-neutral-600 flex flex-col h-full min-h-[400px]"
-        >
-          <div class="p-5 border-b border-neutral-800/50 flex justify-between items-center">
-            <h3 class="font-semibold text-white text-sm">ติวเตอร์คนที่ 3</h3>
-            <button
-              class="text-xs text-neutral-400 hover:text-white transition-colors flex items-center gap-1"
-            >
-              Vote <span>></span>
-            </button>
-          </div>
-          <div class="p-5 flex-1 overflow-y-auto">
-            <markdown
-              class="prose prose-invert prose-sm prose-neutral max-w-none text-neutral-300"
-              [data]="responses().qwen"
-              [katex]="true"
-            ></markdown>
+              <!-- เนื้อหาจริง -->
+              <markdown
+                *ngIf="currentResponse()"
+                class="prose prose-sm prose-neutral max-w-none text-neutral-600"
+                [data]="currentResponse()"
+                [katex]="true"
+              ></markdown>
+            </div>
+
+            <!-- Vote bar -->
+            <div class="px-5 py-3.5 border-t border-neutral-100 flex justify-end">
+              <button
+                (click)="vote(slideLabel())"
+                class="px-4 py-1.5 text-xs border border-neutral-200 rounded-lg text-neutral-400 hover:text-[#DE122F] hover:border-[#DE122F] transition-all duration-150"
+              >
+                โหวตติวเตอร์นี้ ›
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      }
     </div>
   </div>
 </div>
