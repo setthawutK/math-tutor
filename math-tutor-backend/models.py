@@ -1,18 +1,23 @@
-from sqlmodel import SQLModel, Field
-from typing import Optional
-from datetime import datetime, timezone  # เพิ่มการ import timezone เข้ามา
+from typing import Optional, List
+from datetime import datetime
+from pydantic import BaseModel
 
+class AskRequest(BaseModel):
+    question: str
 
-class ResponseVote(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+class AskResponse(BaseModel):
+    id: Optional[str]
     question: str
     wolfram_query: str
-    wolfram_raw: Optional[str] = None
+    wolfram_raw: Optional[str]
+    images: List[str]
     llama_response: str
-    deepseek_response: str
+    gemini_response: str
+    openai_response: str
     qwen_response: str
-    voted_model: Optional[str] = None
-    comment: Optional[str] = None
+    created_at: Optional[datetime] = None  # เพิ่ม
 
-    # แก้ไขบรรทัดนี้โดยใช้ lambda เพื่อเรียก datetime.now พร้อมระบุโซนเวลา UTC
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+class VoteRequest(BaseModel):
+    response_id: str
+    voted_model: str
+    comment: Optional[str] = None

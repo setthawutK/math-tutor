@@ -55,6 +55,26 @@ models = {
         google_api_key=SecretStr(os.getenv("GEM_KEY", "")),
         temperature=0.3
     ),
+    # "openai":  ChatOpenAI(
+    #     base_url="https://api.groq.com/openai/v1",
+    #     api_key=SecretStr(os.getenv("QWEN_K7_KEY", "")),
+    #     model="llama-3.3-70b-versatile",
+    #     temperature=0.3,
+    #     max_tokens=3000
+    # ),
+    # "openai": ChatOpenAI(
+    #     base_url="https://api.groq.com/openai/v1",
+    #     api_key=SecretStr(os.getenv("OPENAI_KEY", "")),
+    #     model="openai/gpt-oss-20b",
+    #     temperature=0.3,
+    #     max_tokens=3000
+    # ),
+    "openai": ChatOpenAI(
+        base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        api_key=SecretStr(os.getenv("QWEN_CLOUD_KEY", "")),
+        model="deepseek-v4-flash",
+        temperature=0.3,
+    ),
     "qwen": ChatOpenAI(
         base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
         api_key=SecretStr(os.getenv("QWEN_CLOUD_KEY", "")),
@@ -63,6 +83,9 @@ models = {
         model_kwargs={"extra_body": {"enable_thinking": False}}
     )
 }
+
+matrix_example = r"$$ \begin{pmatrix}a & b\\c & d\end{pmatrix} $$"
+MATRIX_RULE = r"- สมการที่มี matrix (\begin{pmatrix}) ห้ามใส่ใน $ ... $ (inline) เด็ดขาด ต้องใช้ $$ ... $$ (display) เท่านั้น"
 
 def _build_prompt(thai_query: str, wolfram_result: str, history: str = "") -> str:
     history_section = f"บทสนทนาก่อนหน้า:\n{history}\n" if history else ""
@@ -86,13 +109,15 @@ def _build_prompt(thai_query: str, wolfram_result: str, history: str = "") -> st
 > ระบุนิพจน์ ตัวแปร ค่าที่กำหนด หรือเงื่อนไขสำคัญ
 
 **3. วางแผนการแก้โจทย์**
-> บอกว่าจะใช้กฎหรือทฤษฎีใด และทำไมจึงเลือกวิธีนั้น
+> บอกแนวทางที่จะใช้แก้โจทย์ และเหตุผลสั้น ๆ
 
 **4. แสดงวิธีทำทีละขั้นตอน**
-> แสดงการจัดรูปสมการอย่างเป็นลำดับขั้น
+> ใช้แนวทางจากข้อ 3 เท่านั้น ห้ามเปลี่ยนแนวทางกลางคัน
+> แสดงขั้นตอนไม่เกิน 5 ขั้น ห้ามแยกอินทิกรัลออกเป็นชิ้นย่อยโดยไม่จำเป็น
 
 **5. สรุปคำตอบ**
-> สรุปคำตอบสุดท้ายให้ชัดเจน
+> สรุปคำตอบสุดท้ายในกรอบนี้เสมอ:
+> $$\\boxed{{คำตอบ}}$$
 
 === กฎการจัดรูปแบบ (บังคับ 100%) ===
 
@@ -125,16 +150,24 @@ def _build_prompt(thai_query: str, wolfram_result: str, history: str = "") -> st
 - สมการขึ้นบรรทัดใหม่ → $$ ... $$ พร้อม > นำหน้า และมีบรรทัดว่าง (>) คั่นก่อนและหลัง
 - ห้ามใช้ \\( \\) หรือ \\[ \\] เด็ดขาด
 - ห้ามเขียน LaTeX ลอยๆ นอก $ เช่น \\frac, \\lim, \\sin
+- สมการ matrix ให้ใช้ {matrix_example}
+- สมการ $$ ต้องขึ้นต้นด้วย > เพียงตัวเดียว ไม่มีอะไรอื่น
+- {MATRIX_RULE}
+
 
 **การเขียนข้อความ:**
 - ห้ามใช้ emoji ทุกกรณี
 - ใช้ภาษาเป็นทางการแต่เข้าใจง่าย ไม่ต้องมีคำทักทาย
+
 
 === ข้อห้ามเนื้อหา ===
 - ห้ามมีคำว่า "Wolfram" ในคำอธิบาย
 - คำตอบสุดท้ายต้องตรงกับผลลัพธ์จากการคำนวณ
 - ห้ามอธิบายเกินขอบเขตโจทย์
 - ห้ามสร้างโจทย์ใหม่
+- ห้ามวนซ้ำขั้นตอนที่ทำไปแล้ว
+- ขั้นที่ 4 มีได้ไม่เกิน 5 ขั้นย่อยเท่านั้น
+- ห้ามใช้ > ซ้อนกัน 2 ชั้น (> >) เด็ดขาด ให้ใช้ > ชั้นเดียวเท่านั้นทุกกรณี
 """
 
 
@@ -157,17 +190,33 @@ def _call_llm(model_name: str, p: str) -> str:
 
 
 def explain(thai_query: str, wolfram_result: str, model_name: str, history: str = "") -> str:
-    """Sync version — ใช้ใน /ask endpoint"""
-    p = _build_prompt(thai_query, wolfram_result, history)
-    return _call_llm(model_name, p)
+    try:
+        p = _build_prompt(thai_query, wolfram_result, history)
+        return _call_llm(model_name, p)
+    except Exception as e:
+        print(f"[explain error - {model_name}]: {type(e).__name__}: {e}")  # เพิ่ม type
+        return ""
 
 
 async def aexplain(thai_query: str, wolfram_result: str, model_name: str) -> AsyncGenerator[str, None]:
-    """Async streaming version — ใช้ใน /ask/stream endpoint"""
     p = _build_prompt(thai_query, wolfram_result)
-    async for chunk in models[model_name].astream(p):
-        content = str(chunk.content)
-        # กรอง <think> tag ที่อาจมาระหว่าง stream (qwen)
-        content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
+    full_response = ""
+    try:
+        async for chunk in models[model_name].astream(p):
+            content = str(chunk.content)
+            content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
+            if content:
+                full_response += content
+                yield content
+    except Exception:
+        result = await models[model_name].ainvoke(p)
+        content = re.sub(r'<think>.*?</think>', '', str(result.content), flags=re.DOTALL)
         if content:
+            full_response += content
             yield content
+
+    # fix \\ หายใน matrix
+    print(f"\n[{model_name} FULL RESPONSE]\n{full_response}\n{'='*50}")
+
+
+    #$$ ผลคูณ\:\begin{pmatrix}2 & 2\\ 2 & 2\end{pmatrix}\:\begin{pmatrix}2 & 1\\ 3 & 4\end{pmatrix} $$
