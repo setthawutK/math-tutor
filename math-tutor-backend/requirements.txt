@@ -66,3 +66,4 @@ python-dotenv
 requests
 tenacity
 slowapi
+google-cloud-firestore>=2.27.0

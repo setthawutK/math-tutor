@@ -105,26 +105,18 @@ def ask(req: AskRequest, db: Session = Depends(get_session)):
 
 @app.post("/ask/stream")
 async def ask_stream(req: AskRequest):
-    # 1. แปลโจทย์ + Wolfram
     wolfram_query = translate_to_wolfram(req.question)
     wolfram_data = ask_wolfram(wolfram_query)
     raw = wolfram_data["raw"] if wolfram_data else "ไม่สามารถคำนวณได้"
 
     async def generate():
-        yield f"data: {json.dumps({'type': 'wolfram', 'content': raw})}\n\n"
+        from services.llm import translate_to_wolfram, explain, aexplain
 
-        for model_name in ["llama", "deepseek", "qwen"]:
+        # ใน generate()
+        for model_name in ["llama", "gemini", "qwen"]:
             yield f"data: {json.dumps({'type': 'start', 'model': model_name})}\n\n"
-
-            llm = models[model_name]
-            async for chunk in llm.astream(f"""
-คุณคือติวเตอร์แคลคูลัส 1
-โจทย์: {req.question}
-Wolfram: {raw}
-อธิบาย step-by-step ภาษาไทย
-"""):
-                yield f"data: {json.dumps({'type': 'chunk', 'model': model_name, 'content': chunk.content})}\n\n"
-
+            async for content in aexplain(req.question, raw, model_name):
+                yield f"data: {json.dumps({'type': 'chunk', 'model': model_name, 'content': content})}\n\n"
             yield f"data: {json.dumps({'type': 'done', 'model': model_name})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
