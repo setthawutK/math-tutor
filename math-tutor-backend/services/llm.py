@@ -69,7 +69,7 @@ models = {
     #     temperature=0.3,
     #     max_tokens=3000
     # ),
-    "openai": ChatOpenAI(
+    "deepseek": ChatOpenAI(
         base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
         api_key=SecretStr(os.getenv("QWEN_CLOUD_KEY", "")),
         model="deepseek-v4-flash",
@@ -219,4 +219,3 @@ async def aexplain(thai_query: str, wolfram_result: str, model_name: str) -> Asy
     print(f"\n[{model_name} FULL RESPONSE]\n{full_response}\n{'='*50}")
 
 
-    #$$ ผลคูณ\:\begin{pmatrix}2 & 2\\ 2 & 2\end{pmatrix}\:\begin{pmatrix}2 & 1\\ 3 & 4\end{pmatrix} $$
