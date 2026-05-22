@@ -36,10 +36,24 @@ Follow these rules strictly:
      "limit ((f(x+h) - f(x)) / h) as h->0"
 """
 
+
 prompt = ChatPromptTemplate.from_messages([
     ("system", system_instruction),
-    ("human", "Translate this to Wolfram query: {query}. Category: {category}")
+    # Few-shot examples
+    ("human", "Translate: หาลิมิตของ sin(x)/x เมื่อ x เข้าใกล้ 0. Category: limit"),
+    ("assistant", "limit of sin(x)/x as x->0"),
+    ("human", "Translate: หาอนุพันธ์ของ x^2 + 3x. Category: diff"),
+    ("assistant", "derivative of x^2 + 3x"),
+    ("human", "Translate: หาปริพันธ์ของ e^x. Category: integral"),
+    ("assistant", "integral of e^x"),
+    # โจทย์จริง
+    ("human", "Translate: {query}. Category: {category}")
 ])
+
+# prompt = ChatPromptTemplate.from_messages([
+#     ("system", system_instruction),
+#     ("human", "Translate this to Wolfram query: {query}. Category: {category}")
+# ])
 
 chain = prompt | llm_translate
 
