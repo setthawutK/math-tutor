@@ -29,7 +29,7 @@ math-tutor/
 │   └── results_evaluated.csv    # ผลลัพธ์การประเมินรายข้อ
 │
 ├── math-tutor-webapp/           # Angular Frontend
-│   ├── src/app/
+│   ├── src/app/modules
 │   │   └── chat-page/
 │   │       ├── chat-page.ts     # Component logic (SSE streaming, vote)
 │   │       └── chat-page.html   # UI (MathLive input, carousel, vote button)
