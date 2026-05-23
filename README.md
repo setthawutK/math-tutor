@@ -41,14 +41,12 @@ math-tutor/
 
 ---
 
-## สถาปัตยกรรมระบบ
-
 ### Backend (Python / FastAPI)
 
 | ไฟล์ | หน้าที่ |
 |------|---------|
 | `main.py` | REST API — `/ask/stream` (SSE), `/vote`, `/results` |
-| `services/llm.py` | Prompt Template 1 (Few-shot แปลโจทย์) + Prompt Template 2 (Zero-shot + Plan-and-Solve) |
+| `services/llm.py` | Prompt Template 1 (Few-shot แปลโจทย์) + Prompt Template 2 (Few-shot + Plan-and-Solve) |
 | `services/wolfram.py` | เรียก Wolfram Alpha LLM API |
 | `database.py` | เชื่อมต่อ Cloud Firestore |
 
