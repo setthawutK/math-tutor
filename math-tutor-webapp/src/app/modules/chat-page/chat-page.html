@@ -75,6 +75,21 @@
         </span>
       </div>
 
+      <!-- Wolfram Images — แสดงครั้งเดียวเหนือ carousel -->
+      <!-- @if (wolframImages().length > 0) {
+        <div class="max-w-3xl mx-auto mb-4">
+          <p class="text-xs text-neutral-400 mb-2 px-1">กราฟจากการคำนวณ</p>
+          <div class="flex gap-3 flex-wrap">
+            @for (img of wolframImages(); track img) {
+              <img
+                [src]="img"
+                class="rounded-xl border border-neutral-200 shadow-sm max-h-48 bg-white p-2"
+              />
+            }
+          </div>
+        </div>
+      } -->
+
       <!-- Carousel -->
       @if (hasResult()) {
         <div class="max-w-3xl mx-auto">
@@ -132,7 +147,6 @@
                 class="prose prose-sm prose-neutral max-w-none text-neutral-600"
                 [data]="currentResponse()"
                 [katex]="true"
-                [katexOptions]="{ throwOnError: false }"
                 [katexOptions]="katexOpts"
               ></markdown>
             </div>
