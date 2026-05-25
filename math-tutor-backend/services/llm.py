@@ -46,7 +46,7 @@ prompt = ChatPromptTemplate.from_messages([
     ("assistant", "derivative of x^2 + 3x"),
     ("human", "Translate: หาปริพันธ์ของ e^x. Category: integral"),
     ("assistant", "integral of e^x"),
-    # โจทย์จริง
+
     ("human", "Translate: {query}. Category: {category}")
 ])
 
@@ -65,10 +65,17 @@ models = {
         temperature=0.3
     ),
     "gemini": ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
+        model="gemini-2.0-flash",
         google_api_key=SecretStr(os.getenv("GEM_KEY", "")),
         temperature=0.3
     ),
+    "qwen": ChatOpenAI(
+        base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        api_key=SecretStr(os.getenv("QWEN_CLOUD_KEY", "")),
+        model="qwen3.6-flash",
+        temperature=0.3,
+        model_kwargs={"extra_body": {"enable_thinking": False}}
+    )
     # "openai":  ChatOpenAI(
     #     base_url="https://api.groq.com/openai/v1",
     #     api_key=SecretStr(os.getenv("QWEN_K7_KEY", "")),
@@ -83,23 +90,29 @@ models = {
     #     temperature=0.3,
     #     max_tokens=3000
     # ),
-    "deepseek": ChatOpenAI(
-        base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-        api_key=SecretStr(os.getenv("QWEN_CLOUD_KEY", "")),
-        model="deepseek-v4-flash",
-        temperature=0.3,
-    ),
-    "qwen": ChatOpenAI(
-        base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-        api_key=SecretStr(os.getenv("QWEN_CLOUD_KEY", "")),
-        model="qwen3.6-flash",
-        temperature=0.3,
-        model_kwargs={"extra_body": {"enable_thinking": False}}
-    )
+    # "deepseek": ChatGoogleGenerativeAI(
+    #     model="gemini-2.5-flash",
+    #     google_api_key=SecretStr(os.getenv("GEM_KEY", "")),
+    #     temperature=0.3
+    # ),
+    # "deepseek": ChatGoogleGenerativeAI(
+    #     model="gemini-2.5-flash",
+    #     google_api_key=SecretStr(os.getenv("GEM_KEY", "")),
+    #     temperature=0.3
+    # ),
+    #     ChatOpenAI(
+    #     base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    #     api_key=SecretStr(os.getenv("QWEN_CLOUD_KEY", "")),
+    #     model="deepseek-v4-flash",
+    #     temperature=0.3,
+    # )
 }
 
 matrix_example = r"$$ \begin{pmatrix}a & b\\c & d\end{pmatrix} $$"
 MATRIX_RULE = r"- สมการที่มี matrix (\begin{pmatrix}) ห้ามใส่ใน $ ... $ (inline) เด็ดขาด ต้องใช้ $$ ... $$ (display) เท่านั้น"
+DIFF_RULE = r"- ห้ามใช้ \differentialD เด็ดขาด ให้ใช้ \frac{d}{dx} แทนเสมอ"
+LONG_ANS_RULE = r"- ถ้าคำตอบเป็นตัวเลขที่มีมากกว่า 10 หลัก ให้แสดงในรูปแบบนิพจน์ทางคณิตศาสตร์แทน เช่น $2^{2024}e^{2x}$ ห้ามคำนวณตัวเลขออกมาทั้งหมด"
+HIGHER_ORDER_RULE = r"- อนุพันธ์ลำดับที่ n ของ $e^{ax}$ คือ $a^n e^{ax}$ ให้ระบุ pattern และใช้สูตรทั่วไปโดยตรง ห้ามคำนวณทีละขั้น"
 
 def _build_prompt(thai_query: str, wolfram_result: str, history: str = "") -> str:
     history_section = f"บทสนทนาก่อนหน้า:\n{history}\n" if history else ""
@@ -130,7 +143,7 @@ def _build_prompt(thai_query: str, wolfram_result: str, history: str = "") -> st
 > แสดงขั้นตอนไม่เกิน 5 ขั้น ห้ามแยกอินทิกรัลออกเป็นชิ้นย่อยโดยไม่จำเป็น
 
 **5. สรุปคำตอบ**
-> สรุปคำตอบสุดท้ายในกรอบนี้เสมอ:
+> สรุปคำตอบสุดท้ายในกรอบนี้เสมอ โดยใส่เฉพาะคำตอบที่ง่ายและกระชับที่สุดเพียงรูปแบบเดียว:
 > $$\\boxed{{คำตอบ}}$$
 
 === กฎการจัดรูปแบบ (บังคับ 100%) ===
@@ -168,11 +181,10 @@ def _build_prompt(thai_query: str, wolfram_result: str, history: str = "") -> st
 - สมการ $$ ต้องขึ้นต้นด้วย > เพียงตัวเดียว ไม่มีอะไรอื่น
 - {MATRIX_RULE}
 
-
 **การเขียนข้อความ:**
 - ห้ามใช้ emoji ทุกกรณี
 - ใช้ภาษาเป็นทางการแต่เข้าใจง่าย ไม่ต้องมีคำทักทาย
-
+- ถ้าเป็นโจทย์คณิตง่ายๆ ไม่ต้องคิดเยอะ และอธิบายลักษณะเข้าใจง่ายที่สุด
 
 === ข้อห้ามเนื้อหา ===
 - ห้ามมีคำว่า "Wolfram" ในคำอธิบาย
@@ -182,6 +194,9 @@ def _build_prompt(thai_query: str, wolfram_result: str, history: str = "") -> st
 - ห้ามวนซ้ำขั้นตอนที่ทำไปแล้ว
 - ขั้นที่ 4 มีได้ไม่เกิน 5 ขั้นย่อยเท่านั้น
 - ห้ามใช้ > ซ้อนกัน 2 ชั้น (> >) เด็ดขาด ให้ใช้ > ชั้นเดียวเท่านั้นทุกกรณี
+- {DIFF_RULE}
+- {LONG_ANS_RULE}
+- {HIGHER_ORDER_RULE}
 """
 
 

@@ -72,7 +72,6 @@ def check_correctness(model_ans: str, expected: str) -> int:
             return 0
 
         model_ans = strip_think_blocks(model_ans)
-
         boxed_content = extract_boxed(model_ans)
         if boxed_content:
             final_section = boxed_content.strip()

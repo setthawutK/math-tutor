@@ -43,30 +43,29 @@ def ask(req: AskRequest):
     raw = wolfram_data["raw"] if wolfram_data else None
     wolfram_text = raw or "ไม่สามารถคำนวณได้"
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        llama_future  = executor.submit(explain, req.question, wolfram_text, "llama")
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        llama_future    = executor.submit(explain, req.question, wolfram_text, "llama")
+        qwen_future     = executor.submit(explain, req.question, wolfram_text, "qwen")
         gemini_future = executor.submit(explain, req.question, wolfram_text, "gemini")
-        qwen_future   = executor.submit(explain, req.question, wolfram_text, "qwen")
-        openai_future = executor.submit(explain, req.question, wolfram_text, "openai")
 
-        llama_res  = llama_future.result()
         gemini_res = gemini_future.result()
-        qwen_res   = qwen_future.result()
-        openai_res = openai_future.result()
+        llama_res    = llama_future.result()
+        qwen_res     = qwen_future.result()
+
+
 
     now = datetime.now(timezone.utc)
     doc_ref = db.collection("responses").document()
     doc_ref.set({
-        "question":        req.question,
-        "wolfram_query":   wolfram_query,
-        "wolfram_raw":     raw,
-        "llama_response":  llama_res,
+        "question":          req.question,
+        "wolfram_query":     wolfram_query,
+        "wolfram_raw":       raw,
+        "llama_response":    llama_res,
         "gemini_response": gemini_res,
-        "qwen_response":   qwen_res,
-        "openai_response": openai_res,
-        "voted_model":     None,
-        "comment":         None,
-        "created_at":      now,
+        "qwen_response":     qwen_res,
+        "voted_model":       None,
+        "comment":           None,
+        "created_at":        now,
     })
 
     return AskResponse(
@@ -78,9 +77,9 @@ def ask(req: AskRequest):
         llama_response=llama_res,
         gemini_response=gemini_res,
         qwen_response=qwen_res,
-        openai_response=openai_res,
         created_at=now,
     )
+
 
 def _is_not_math(text: str) -> bool:
     non_question_keywords = [
@@ -94,45 +93,62 @@ def _is_not_math(text: str) -> bool:
         return True
     return False
 
+
 @app.post("/ask/stream")
 async def ask_stream(req: AskRequest):
+    print(f"[ask_stream] รับโจทย์: {req.question[:50]}")
     wolfram_query = translate_to_wolfram(req.question)
+    print(f"[ask_stream] wolfram_query: {wolfram_query}")
     wolfram_data = ask_wolfram(wolfram_query)
+    print(f"[ask_stream] wolfram_data is None: {wolfram_data is None}")
     raw = wolfram_data["raw"] if wolfram_data else "ไม่สามารถคำนวณได้"
 
     if not wolfram_query or wolfram_query.strip() == "" or _is_not_math(req.question):
+        print(f"[ask_stream] → not_math branch")
         async def not_math():
             yield f"data: {json.dumps({'type': 'error', 'content': 'not_math'})}\n\n"
         return StreamingResponse(not_math(), media_type="text/event-stream")
 
+    print(f"[ask_stream] → generate branch")
+
     async def generate():
         from services.llm import aexplain
+        print(f"[generate] เริ่ม")
+        try:
+            now = datetime.now(timezone.utc)
+            doc_ref = db.collection("responses").document()
+            doc_ref.set({
+                "question":   req.question,
+                "wolfram_raw": raw,
+                "voted_model": None,
+                "created_at":  now,
+            })
 
-        now = datetime.now(timezone.utc)
-        doc_ref = db.collection("responses").document()
-        doc_ref.set({
-            "question":   req.question,
-            "wolfram_raw": raw,
-            "voted_model": None,
-            "created_at":  now,
-        })
+            print(f"✅ Saved to Firestore: {doc_ref.id}")
+            yield f"data: {json.dumps({'type': 'response_id', 'content': doc_ref.id})}\n\n"
 
-        print(f"✅ Saved to Firestore: {doc_ref.id}")
-        yield f"data: {json.dumps({'type': 'response_id', 'content': doc_ref.id})}\n\n"
+            images = wolfram_data.get('images', []) if wolfram_data else []
+            print(f"[generate] images: {images}")
+            yield f"data: {json.dumps({'type': 'wolfram_images', 'content': images})}\n\n"
 
-        for model_name in ["llama", "openai", "qwen"]:
-            print(f"[stream] เริ่ม {model_name}")
-            yield f"data: {json.dumps({'type': 'start', 'model': model_name})}\n\n"
-            count = 0
-            async for content in aexplain(req.question, raw, model_name):
-                # fix \\ ที่จะหายตอน JSON serialize
-                safe_content = content.replace("\\", "\\\\")
-                count += 1
-                yield f"data: {json.dumps({'type': 'chunk', 'model': model_name, 'content': safe_content})}\n\n"
-            print(f"[stream] จบ {model_name} chunks={count}")
-            yield f"data: {json.dumps({'type': 'done', 'model': model_name})}\n\n"
+            for model_name in ["llama", "gemini", "qwen"]:
+                print(f"[stream] เริ่ม {model_name}")
+                yield f"data: {json.dumps({'type': 'start', 'model': model_name})}\n\n"
+                count = 0
+                async for content in aexplain(req.question, raw, model_name):
+                    safe_content = content.replace("\\", "\\\\")
+                    count += 1
+                    yield f"data: {json.dumps({'type': 'chunk', 'model': model_name, 'content': safe_content})}\n\n"
+                print(f"[stream] จบ {model_name} chunks={count}")
+                yield f"data: {json.dumps({'type': 'done', 'model': model_name})}\n\n"
+
+        except Exception as e:
+            print(f"[generate] ERROR: {e}")
+            import traceback
+            traceback.print_exc()
 
     return StreamingResponse(generate(), media_type="text/event-stream")
+
 
 @app.post("/vote")
 def vote(req: VoteRequest):
@@ -146,7 +162,10 @@ def vote(req: VoteRequest):
     })
     return {"status": "บันทึกโหวตสำเร็จ"}
 
+
 @app.get("/results")
 def results():
-    docs = db.collection("responses").stream()
+    docs = db.collection("responses")\
+             .where("voted_model", "!=", None)\
+             .stream()
     return [{"id": doc.id, **doc.to_dict()} for doc in docs]

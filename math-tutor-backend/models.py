@@ -13,9 +13,8 @@ class AskResponse(BaseModel):
     images: List[str]
     llama_response: str
     gemini_response: str
-    openai_response: str
     qwen_response: str
-    created_at: Optional[datetime] = None  # เพิ่ม
+    created_at: Optional[datetime] = None
 
 class VoteRequest(BaseModel):
     response_id: str
